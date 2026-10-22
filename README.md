@@ -16,17 +16,6 @@
 | Architecture | [doc/architecture.md](doc/architecture.md) |
 | References | [doc/references.md](doc/references.md) |
 
-## How to run
-
-Dependencies:
-
-- C++17, CMake >= 3.16
-- OpenCV >= 4.0, Eigen3 >= 3.3, libpng
-- Ceres Solver and spdlog (included in `thirdparty/`)
-- GLFW >= 3.3 and OpenGL for the viewer (optional)
-
-Build, get a dataset, run and evaluate: [Quick start](doc/usage.md)
-
 ## Benchmark Datasets
 
 ```bibtex

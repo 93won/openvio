@@ -8,7 +8,12 @@ cd openvio
 ./build.sh
 ```
 
-The tool is `build/bin/vio`. Dependencies: see the [README](../README.md#how-to-run).
+The tool is `build/bin/vio`. Dependencies:
+
+- C++17, CMake >= 3.16
+- OpenCV >= 4.0, Eigen3 >= 3.3, libpng
+- Ceres Solver and spdlog (included in `thirdparty/`)
+- GLFW >= 3.3 and OpenGL for the viewer (optional)
 
 ## 2. Get a dataset
 
