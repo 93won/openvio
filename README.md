@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-[![OpenVIO demo](doc/media/openvio_demo.png)](https://github.com/93won/openvio/releases/download/v1.0.0/openvio_demo.mp4)
+[![OpenVIO demo](doc/media/openvio_demo.png)](https://youtu.be/sCMYwvradZU)
 
 ## Docs
 
