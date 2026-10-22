@@ -8,9 +8,16 @@
 
 ## How to run
 
-[doc/usage.md](doc/usage.md)
+Dependencies:
 
-## Datasets
+- C++17, CMake >= 3.16
+- OpenCV >= 4.0, Eigen3 >= 3.3, libpng
+- Ceres Solver and spdlog (included in `thirdparty/`)
+- GLFW >= 3.3 and OpenGL for the viewer (optional)
+
+Build, get a dataset, run and evaluate: [doc/usage.md](doc/usage.md)
+
+## Benchmark Datasets
 
 ```bibtex
 @article{wu2026panoair,

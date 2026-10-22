@@ -8,7 +8,7 @@ cd openvio
 ./build.sh
 ```
 
-The tool is `build/bin/vio`. Dependencies: see the [README](../README.md#dependencies).
+The tool is `build/bin/vio`. Dependencies: see the [README](../README.md#how-to-run).
 
 ## 2. Get a dataset
 
