@@ -1,4 +1,4 @@
-# Getting started
+# Usage
 
 ## 1. Build
 

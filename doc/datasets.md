@@ -6,7 +6,7 @@
 | EuRoC MAV (11 sequences) | stereo pinhole | `config/euroc.yaml`, `config/euroc_stereo.yaml` | `scripts/python/download_dataset.py euroc` |
 | TUM-VI, 512 x 512 export | stereo fisheye | `config/tum_vi.yaml`, `config/tum_vi_stereo.yaml` | `scripts/python/download_dataset.py tumvi` |
 
-Build, run and evaluate: [getting_started.md](getting_started.md).
+Build, run and evaluate: [usage.md](usage.md).
 
 ## Download
 
