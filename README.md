@@ -4,7 +4,17 @@
 
 [![OpenVIO demo](doc/media/openvio_demo.png)](https://github.com/93won/openvio/releases/download/v1.0.0/openvio_demo.mp4)
 
-**Release notes:** [v1.0.0](release_notes/v1.0.0.pdf)
+## Docs
+
+| | |
+|---|---|
+| Release notes | [v1.0.0](release_notes/v1.0.0.pdf) |
+| Quick start | [doc/usage.md](doc/usage.md) |
+| Datasets | [doc/datasets.md](doc/datasets.md) |
+| Configuration | [doc/configuration.md](doc/configuration.md) |
+| Camera models | [doc/camera_models.md](doc/camera_models.md) |
+| Architecture | [doc/architecture.md](doc/architecture.md) |
+| References | [doc/references.md](doc/references.md) |
 
 ## How to run
 
@@ -15,7 +25,7 @@ Dependencies:
 - Ceres Solver and spdlog (included in `thirdparty/`)
 - GLFW >= 3.3 and OpenGL for the viewer (optional)
 
-Build, get a dataset, run and evaluate: [doc/usage.md](doc/usage.md)
+Build, get a dataset, run and evaluate: [Quick start](doc/usage.md)
 
 ## Benchmark Datasets
 
