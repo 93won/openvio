@@ -1,96 +1,71 @@
 #!/bin/bash
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 Seungwon Choi. All rights reserved.
 
-set -e  # Exit on any error
+# Build script for 360 VIO
 
-echo "=============================================="
-echo "  Lightweight VIO Build Script with ThirdParty"
-echo "=============================================="
+# Check and install dependencies
+install_deps() {
+    echo "Checking dependencies..."
+    
+    DEPS=""
+    
+    # Check glog
+    if ! pkg-config --exists libglog 2>/dev/null && [ ! -f /usr/include/glog/logging.h ]; then
+        DEPS="$DEPS libgoogle-glog-dev"
+    fi
+    
+    # Check gflags
+    if ! pkg-config --exists gflags 2>/dev/null && [ ! -f /usr/include/gflags/gflags.h ]; then
+        DEPS="$DEPS libgflags-dev"
+    fi
+    
+    # Check SuiteSparse (for Ceres)
+    if [ ! -f /usr/include/suitesparse/cholmod.h ] && [ ! -f /usr/include/cholmod.h ]; then
+        DEPS="$DEPS libsuitesparse-dev"
+    fi
+    
+    # Check BLAS/LAPACK
+    if [ ! -f /usr/lib/x86_64-linux-gnu/libblas.so ] && [ ! -f /usr/lib/libblas.so ]; then
+        DEPS="$DEPS libblas-dev liblapack-dev"
+    fi
+    
+    if [ -n "$DEPS" ]; then
+        echo "Installing missing dependencies:$DEPS"
+        sudo apt-get update
+        sudo apt-get install -y $DEPS
+    else
+        echo "All dependencies found."
+    fi
+}
 
-# Get number of CPU cores for parallel compilation (use half of available cores)
-NPROC=$(($(nproc) / 2))
-if [ $NPROC -lt 1 ]; then
-    NPROC=1
-fi
-echo "Using $NPROC cores for compilation (half of available)"
+install_deps
 
-# Install system dependencies
-echo ""
-echo "Step 0: Installing system dependencies..."
-echo "========================================"
-sudo apt update
-sudo apt install -y \
-    cmake \
-    build-essential \
-    libopencv-dev \
-    libeigen3-dev \
-    libgl1-mesa-dev \
-    libglu1-mesa-dev \
-    libglew-dev \
-    libyaml-cpp-dev \
-    libgflags-dev \
-    libgoogle-glog-dev \
-    libatlas-base-dev \
-    libsuitesparse-dev
-
-echo "System dependencies installed successfully!"
-
-# Build third-party dependencies
-echo ""
-echo "Step 1: Building third-party dependencies..."
-echo "=============================================="
-
-# Build Ceres Solver
-echo "Building Ceres Solver..."
-if [ ! -d "thirdparty/ceres-solver/build" ]; then
-    mkdir -p thirdparty/ceres-solver/build
-fi
-cd thirdparty/ceres-solver/build
-cmake .. \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_TESTING=OFF \
-    -DBUILD_EXAMPLES=OFF \
-    -DBUILD_BENCHMARKS=OFF \
-    -DUSE_TBB=OFF \
-    -DUSE_OPENMP=ON \
-    -DSUITESPARSE=OFF \
-    -DCXSPARSE=OFF \
-    -DMINIGLOG=ON \
-    -DEIGENSPARSE=ON
-make -j$NPROC
-cd ../../..
-
-# Build Pangolin
-echo "Building Pangolin..."
-if [ ! -d "thirdparty/pangolin/build" ]; then
-    mkdir -p thirdparty/pangolin/build
-fi
-cd thirdparty/pangolin/build
-cmake .. \
-    -DCMAKE_BUILD_TYPE=Release \
-    -DBUILD_EXAMPLES=OFF \
-    -DBUILD_TOOLS=OFF \
-    -DBUILD_PYPANGOLIN=OFF \
-    -DBUILD_PANGOLIN_PYTHON=OFF
-make -j$NPROC
-cd ../../..
-
-# Build main project
-echo ""
-echo "Step 2: Building main project..."
-echo "================================="
-
-# Create build directory for main project
-if [ ! -d "build" ]; then
-    mkdir build
-fi
-
+# Create build directory
+mkdir -p build
 cd build
 
-# Configure and build main project
-cmake .. -DCMAKE_BUILD_TYPE=Release
-make -j$NPROC
+# Configure with CMake (disable TBB and SuiteSparse for compatibility with newer system libs)
+cmake .. -DTBB_FOUND=FALSE -DSUITESPARSE=OFF
 
-echo ""
-echo "=============================================="
-echo "  Build completed successfully!"
-echo "=============================================="
+# Build
+make -j$(nproc)
+
+# Check if build was successful
+if [ $? -eq 0 ]; then
+    echo ""
+    echo "==================================="
+    echo "Build successful!"
+    echo "==================================="
+    echo ""
+    echo "Run the odometry with:"
+    echo "  build/bin/vio odometry --dataset_path <dataset> --config_path config/panoair.yaml --output_path <trajectory.tum>"
+    echo "  build/bin/vio gui --dataset_path <dataset> --config_path config/panoair.yaml"
+    echo ""
+else
+    echo ""
+    echo "==================================="
+    echo "Build failed!"
+    echo "==================================="
+    exit 1
+fi

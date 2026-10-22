@@ -1,0 +1,115 @@
+%YAML:1.0
+---
+# EuRoC MAV stereo (cameras 0 and 1 + IMU of the VI-Sensor). config/euroc.yaml with the second camera: camera1 and
+# rig.imu_from_camera1 from the dataset's own files (mav0/cam1/sensor.yaml), and the stereo match threshold.
+
+camera:
+  model: PINHOLE_RADTAN
+  width: 752
+  height: 480
+  params: [458.654, 457.296, 367.215, 248.375, -0.28340811, 0.07395907, 0.00019359, 1.76187114e-05]   # fx fy cx cy k1 k2 p1 p2 (cam0, radial-tangential)
+  polar_exclusion_ratio: 0.0    # image-height fraction excluded at the top and at the bottom
+  border_margin: 20             # margin at the image edges [px]
+  mask_rectangles: []           # excluded regions [x0, x1, y0, y1] as image fractions
+
+camera1:
+  model: PINHOLE_RADTAN
+  width: 752
+  height: 480
+  params: [457.587, 456.134, 379.999, 255.238, -0.28368365, 0.07451284, -0.00010473, -3.55590700e-05]   # fx fy cx cy k1 k2 p1 p2 (cam1, radial-tangential)
+  polar_exclusion_ratio: 0.0
+  border_margin: 20             # margin at the image edges [px], as camera 0
+  mask_rectangles: []
+
+imu:
+  gyro_noise: 1.6968e-04        # white noise [rad/s/sqrt(Hz)] (ADIS16448, dataset values)
+  accel_noise: 2.0e-3           # white noise [m/s^2/sqrt(Hz)]
+  gyro_walk: 1.9393e-05         # bias random walk [rad/s^2/sqrt(Hz)]
+  accel_walk: 3.0e-3            # bias random walk [m/s^3/sqrt(Hz)]
+  gravity_magnitude: 9.81       # [m/s^2]
+
+rig:
+  # camera to IMU: p_imu = R p_camera + t (T_BS of cam0; the IMU is the body frame)
+  imu_from_camera:
+    - [0.0148655429818, -0.999880929698, 0.00414029679422, -0.0216401454975]
+    - [0.999557249008, 0.0149672133247, 0.025715529948, -0.064676986768]
+    - [-0.0257744366974, 0.00375618835797, 0.999660727178, 0.00981073058949]
+    - [0, 0, 0, 1]
+  # camera 1 to IMU (T_BS of cam1); the pair is fixed, the online extrinsics move both cameras
+  imu_from_camera1:
+    - [0.0125552670891, -0.999755099723, 0.0182237714554, -0.0198435579556]
+    - [0.999598781151, 0.0130119051815, 0.0251588363115, 0.0453689425024]
+    - [-0.0253898008918, 0.0179005838253, 0.999517347078, 0.00786212447038]
+    - [0, 0, 0, 1]
+  clock_offset: 0.0             # t_imu = t_camera + clock_offset [s]; hardware-synchronized
+
+feature_tracker:
+  max_features: 200             # feature target after the initialization
+  quality_level: 0.01           # corner quality relative to the best corner
+  min_distance: 20.0            # minimum distance between features [px]
+  grid_cols: 12                 # cells of about 64 px
+  grid_rows: 8
+  max_features_per_cell: 10     # longest tracks kept per cell
+  min_features_per_cell: 3      # k > 0: the cap per cell shares the feature target over the occupied cells, between k and max_features_per_cell
+  window_size: 21               # optical flow window [px] (also the camera 0 -> camera 1 match)
+  max_pyramid_level: 3
+  max_iterations: 30
+  epsilon: 0.01
+  max_forward_backward_error: 0.5   # track back to the previous image (and from camera 1 back to camera 0); drop points that miss by more [px] (0: off)
+  gain_compensation: 1          # 1: scale the previous image by the brightness ratio of the two images before the optical flow; the auto exposure changes the gain by more than 5 % in 6-34 % of the image pairs (up to x3.5 in V1_03, V2_03)
+  rotation_iterations: 1000     # robust rotation check: samples of three rays
+  rotation_threshold_deg: 10.0  # robust rotation check: inlier angle [deg]; the check models a far scene (360 drone), indoors the translation adds up to ~6 deg of parallax between images (2 m/s at 20 Hz, 1 m away), so only gross mismatches are rejected
+  remove_light_clusters: 0      # off: the rule removes features on saturated night lights of the 360 flights; here it cut the long tracks after the initialization (V1_03: no landmark started)
+  cluster_std_ratio: 0.25
+  cluster_min_intensity: 250    # > 0: only clusters whose features mostly see this intensity in their window (lights) are removed
+  stereo_max_epipolar_error: 2.0    # a camera-1 match may leave the epipolar plane of its camera-0 ray by this much [px]: 2 pixel sigmas (estimator.pixel_sigma 1 px)
+
+landmark_tracker:
+  search_radius: 10.0           # search radius around the predicted pixel on the tangent plane [px at the image center scale]; the 1.4 deg of the 360 setting (5 px at 204 px/rad) is ~11 px at fx 458
+  min_ncc: 0.8                  # minimum normalized cross-correlation of the stored tangent-plane patch
+  patch_half_size: 12           # half size of the stored patch [px]
+  loss_reasons: 42              # search a landmark after the tracker lost it by (bit mask): 1 not found, 2 masked, 4 rotation outlier, 8 grid cap, 16 light cluster, 32 image border
+
+initializer:
+  window_time: 2.0              # seconds of data used by the initializer
+  excitation_accel_std: 1.5     # accel sample std separating still / excited [m/s^2]
+  max_still_disparity: 22.0     # mean pixel disparity separating still / moving [px]; the 2.8 deg of the 360 setting (10 px at 204 px/rad) at fx 458
+  rotation_compensated_disparity: 0   # 1: the disparity is measured after turning the first ray by the gyro (only translation counts as moving)
+  max_features: 50              # tracker feature target while initializing
+  refine_max_iterations: 50     # maximum-likelihood refinement iterations (0: no refinement)
+  num_poses: 6                  # poses spread over the window
+  min_rotation_deg: 10.0        # minimum summed gyro rotation over the window [deg]
+  covariance_scale_orientation: 10  # scale of the recovered state's covariance
+  covariance_scale_velocity: 1
+  covariance_scale_gyro_bias: 10
+  covariance_scale_accel_bias: 9
+  min_covariance_rcond: 1.0e-12     # covariance recovery threshold
+  gyro_bias_prior: [0.0, 0.0, 0.0]    # gyro bias linearization point
+  accel_bias_prior: [0.0, 0.0, 0.0]   # accel bias linearization point
+  pixel_sigma: 1.0              # pixel noise [px]
+  rest_accel_bias_sigma: 0.03   # sigma of the accel bias along gravity measured from a start at rest to the initialization [m/s^2] (0: off)
+
+estimator:
+  max_clones: 20                # window size
+  max_landmarks: 150            # full-window tracks kept as landmarks in the state (0: none)
+  landmark_max_linearity: 0.0   # a long track becomes a landmark only when its linearity index 4 sigma_d / d is at most this (0: no limit)
+  landmark_relinearize_ratio: 0.3   # remove a landmark when |rho/rho_first - 1| * rho^2/mean(rho^2) exceeds this (0: never)
+  landmark_max_gate_rejections: 2   # consecutive gate rejections that remove a landmark (others skip the measurement)
+  landmark_dormant_time: 5.0    # a landmark whose track is lost stays in the state this long and is searched again at its predicted pixel [s] (0: off)
+  pixel_sigma: 1.0              # pixel noise [px]
+  time_offset_sigma: 0.02       # prior sigma of the camera time offset estimated online [s] (0: fixed)
+  time_offset_walk: 0.0         # random walk of the time offset [s/sqrt(s)]; 0: camera and IMU share one clock (the 360 camera's clock drifts)
+  extrinsic_rotation_sigma: 0.0087    # prior sigma of the camera-IMU rotation estimated online [rad] (0 with the next: fixed)
+  extrinsic_translation_sigma: 0.01   # prior sigma of the camera-IMU translation estimated online [m]
+  camera_param_sigma: 0.0       # the pinhole model has no online parameters
+  triangulation:
+    max_iterations: 5           # refinement: max accepted steps
+    initial_damping: 1.0e-3
+    max_damping: 1.0e10         # the refinement gives up at this damping
+    min_step: 1.0e-6            # converged step norm
+    min_relative_decrease: 1.0e-6   # converged relative cost decrease
+    damping_factor: 10.0
+    min_depth: 0.10             # min depth along the anchor ray [m]
+    max_depth: 1000000.0        # max depth along the anchor ray [m]
+    max_depth_baseline_ratio: 1000.0  # max distance / baseline ratio
+    max_condition_number: 1000000.0   # max condition number of the linear triangulation

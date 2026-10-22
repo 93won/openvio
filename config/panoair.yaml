@@ -1,0 +1,100 @@
+%YAML:1.0
+---
+# PanoAir drone flights (stitched two-lens 360-degree camera, 1280 x 640 equirectangular images). Default config:
+# landmarks lost by the tracker are searched again at their predicted pixels.
+
+camera:
+  model: EQUIRECTANGULAR
+  width: 1280
+  height: 640
+  params: [0.0063]              # lens-angle error k of the stitching (a ray at theta from its lens axis is imaged at theta + k theta (1 - (2 theta / pi)^2)); start value, refined online (estimator.camera_param_sigma); mean of the converged online estimates of the 17 flights (no ground truth used)
+  polar_exclusion_ratio: 0.15   # image-height fraction excluded at the top and at the bottom
+  border_margin: 20             # margin at the image edges [px] (left/right edge: the back-lens axis)
+  # excluded regions [x0, x1, y0, y1] as image fractions: the drone body (four legs and base) over all flights
+  mask_rectangles: [[0.0, 1.0, 0.0, 0.1], [0.0, 1.0, 0.84, 1.0], [0.0, 0.2, 0.64, 1.0], [0.8, 1.0, 0.64, 1.0], [0.3, 0.41, 0.64, 1.0], [0.6, 0.68, 0.62, 1.0]]
+
+imu:
+  gyro_noise: 8.28865836731e-05     # white noise [rad/s/sqrt(Hz)]
+  accel_noise: 0.000587880617676    # white noise [m/s^2/sqrt(Hz)]
+  gyro_walk: 7.84852086053e-05      # bias random walk [rad/s^2/sqrt(Hz)]
+  accel_walk: 0.000184199881504     # bias random walk [m/s^3/sqrt(Hz)]
+  gravity_magnitude: 9.805          # [m/s^2]
+
+rig:
+  # camera to IMU: p_imu = R p_camera + t
+  imu_from_camera:
+    - [0.0108266808405, -0.0229329596952, -0.999678379451, 0.00260164481834]
+    - [-0.0125526285049, 0.999655081375, -0.0230683722554, 0.0073606008301]
+    - [0.99986259781, 0.0127983452256, 0.010535077593, 0.013976724719]
+    - [0, 0, 0, 1]
+  clock_offset: 0.0             # t_imu = t_camera + clock_offset [s]; no clock shift in the PanoAir calibration
+
+feature_tracker:
+  max_features: 200             # feature target after the initialization
+  quality_level: 0.01           # corner quality relative to the best corner
+  min_distance: 30.0            # minimum distance between features [px]
+  grid_cols: 20
+  grid_rows: 10
+  max_features_per_cell: 10     # longest tracks kept per cell
+  min_features_per_cell: 3      # k > 0: the cap per cell shares the feature target over the occupied cells, between k and max_features_per_cell
+  window_size: 21               # optical flow window [px]
+  max_pyramid_level: 3
+  max_iterations: 30
+  epsilon: 0.01
+  max_forward_backward_error: 0.5   # track back to the previous image; drop points that miss by more [px] (0: off)
+  gain_compensation: 0          # 1: scale the previous image by the brightness ratio of the two images before the optical flow
+  rotation_iterations: 1000     # robust rotation check: samples of three rays
+  rotation_threshold_deg: 2.0   # robust rotation check: inlier angle [deg]
+  remove_light_clusters: 1      # remove feature clusters (cells whose features spread less than cluster_std_ratio of the cell diagonal)
+  cluster_std_ratio: 0.25
+  cluster_min_intensity: 250    # > 0: only clusters whose features mostly see this intensity in their window (lights) are removed
+
+landmark_tracker:
+  search_radius: 5.0            # search radius around the predicted pixel on the tangent plane [px] (accepted matches lie ~1 px from the prediction)
+  min_ncc: 0.8                  # minimum normalized cross-correlation of the stored tangent-plane patch
+  patch_half_size: 12           # half size of the stored patch [px]
+  loss_reasons: 42              # search a landmark after the tracker lost it by (bit mask): 1 not found, 2 polar band / body mask, 4 rotation outlier, 8 grid cap, 16 light cluster, 32 left/right border; 42 = occlusion, border crossing and the grid cap (not after unreliable losses)
+
+initializer:
+  window_time: 2.0              # seconds of data used by the initializer
+  excitation_accel_std: 1.5     # accel sample std separating still / excited [m/s^2]
+  max_still_disparity: 10.0     # mean pixel disparity separating still / moving [px]
+  rotation_compensated_disparity: 0   # 1: the disparity is measured after turning the first ray by the gyro (only translation counts as moving)
+  max_features: 50              # tracker feature target while initializing
+  refine_max_iterations: 50     # maximum-likelihood refinement iterations (0: no refinement)
+  num_poses: 6                  # poses spread over the window
+  min_rotation_deg: 10.0        # minimum summed gyro rotation over the window [deg]
+  covariance_scale_orientation: 10  # scale of the recovered state's covariance
+  covariance_scale_velocity: 1      # the refined velocity sigma already matches the initial velocity errors
+  covariance_scale_gyro_bias: 10
+  covariance_scale_accel_bias: 9    # sigma 0.3 m/s^2, the size of this IMU's accel bias
+  min_covariance_rcond: 1.0e-12     # covariance recovery threshold
+  gyro_bias_prior: [0.0, 0.0, 0.0]    # gyro bias linearization point
+  accel_bias_prior: [0.0, 0.0, 0.0]   # accel bias linearization point
+  pixel_sigma: 1.0              # pixel noise [px]
+  rest_accel_bias_sigma: 0.03   # sigma of the accel bias along gravity measured from a start at rest to the initialization [m/s^2] (0: off)
+
+estimator:
+  max_clones: 20                # window size
+  max_landmarks: 150            # full-window tracks kept as landmarks in the state (0: none); real-time budget
+  landmark_max_linearity: 0.0   # a long track becomes a landmark only when its linearity index 4 sigma_d / d is at most this (0: no limit)
+  landmark_relinearize_ratio: 0.3   # remove a landmark when |rho/rho_first - 1| * rho^2/mean(rho^2) exceeds this (0: never)
+  landmark_max_gate_rejections: 2   # consecutive gate rejections that remove a landmark (others skip the measurement)
+  landmark_dormant_time: 5.0    # a landmark whose track is lost stays in the state this long and is searched again at its predicted pixel [s] (0: off)
+  pixel_sigma: 1.0              # pixel noise [px]
+  time_offset_sigma: 0.02       # prior sigma of the lens time offsets estimated online [s] (0: fixed)
+  time_offset_walk: 0.0003      # random walk of the time offsets [s/sqrt(s)] (measured clock drift ~3 ms / 100 s)
+  extrinsic_rotation_sigma: 0.0087    # prior sigma of the camera-IMU rotation estimated online [rad] (0 with the next: fixed); the dataset rotation is ~0.7 deg off
+  extrinsic_translation_sigma: 0.01   # prior sigma of the camera-IMU translation estimated online [m]
+  camera_param_sigma: 0.0015    # prior sigma of the lens-angle error k estimated online (0: fixed); ~ the spread of k over the 17 flights
+  triangulation:
+    max_iterations: 5           # refinement: max accepted steps
+    initial_damping: 1.0e-3
+    max_damping: 1.0e10         # the refinement gives up at this damping
+    min_step: 1.0e-6            # converged step norm
+    min_relative_decrease: 1.0e-6   # converged relative cost decrease
+    damping_factor: 10.0
+    min_depth: 0.10             # min depth along the anchor ray [m]
+    max_depth: 1000000.0        # max depth along the anchor ray [m]; no cut (a cut keeps only near-biased far points)
+    max_depth_baseline_ratio: 1000.0  # max distance / baseline ratio (distant outdoor features)
+    max_condition_number: 1000000.0   # max condition number of the linear triangulation

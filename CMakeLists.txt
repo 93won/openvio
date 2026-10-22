@@ -1,202 +1,96 @@
-cmake_minimum_required(VERSION 3.10)
-project(lightweight_vio)
+# SPDX-License-Identifier: MIT
+# Copyright (c) 2025 Seungwon Choi. All rights reserved.
 
-# Set default build type to Release if not specified
-if(NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build" FORCE)
-    # Set the possible values of build type for cmake-gui
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
-endif()
+cmake_minimum_required(VERSION 3.16)
+project(vio LANGUAGES C CXX)
 
-# Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Release)
+endif()
 
-# Set OpenGL preference to avoid warnings
-set(OpenGL_GL_PREFERENCE GLVND)
+# Fixed rounding: no fused multiply-add contraction, one portable instruction set, and Eigen's fixed default cache
+# sizes for blocking matrix products (the sizes it would query differ between the core types of a hybrid CPU, which
+# changed the summation order and the last digits from run to run)
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=x86-64-v3 -ffp-contract=off")
+add_compile_definitions(EIGEN_NO_CPUID)
 
-# Find packages
-find_package(OpenCV REQUIRED)
+find_package(OpenCV 4 REQUIRED)
 find_package(Eigen3 REQUIRED)
-find_package(OpenGL REQUIRED)
-find_package(GLEW REQUIRED)
-find_package(Threads REQUIRED)
+find_package(PNG REQUIRED)
 
-# Build Pangolin from thirdparty
-set(BUILD_PANGOLIN_EXAMPLES OFF CACHE BOOL "Build Pangolin examples" FORCE)
-set(BUILD_PANGOLIN_TESTS OFF CACHE BOOL "Build Pangolin tests" FORCE)
-set(BUILD_PANGOLIN_TOOLS OFF CACHE BOOL "Build Pangolin tools" FORCE)
-add_subdirectory(thirdparty/pangolin EXCLUDE_FROM_ALL)
-
-# Build Sophus from thirdparty first with tests disabled
-set(BUILD_TESTS OFF CACHE BOOL "Build Sophus tests" FORCE)
-set(BUILD_SOPHUS_TESTS OFF CACHE BOOL "Build Sophus tests" FORCE)
-set(BUILD_SOPHUS_EXAMPLES OFF CACHE BOOL "Build Sophus examples" FORCE)
-add_subdirectory(thirdparty/Sophus)
-
-# Build spdlog from thirdparty
-set(SPDLOG_BUILD_EXAMPLES OFF CACHE BOOL "Build spdlog examples" FORCE)
-set(SPDLOG_BUILD_TESTS OFF CACHE BOOL "Build spdlog tests" FORCE)
-set(SPDLOG_BUILD_BENCH OFF CACHE BOOL "Build spdlog benchmarks" FORCE)
-add_subdirectory(thirdparty/spdlog)
-
-# Build Ceres from thirdparty without finding system version
-set(CERES_DIR ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/ceres-solver)
+# Third-party libraries
 set(BUILD_EXAMPLES OFF CACHE BOOL "Build Ceres examples" FORCE)
 set(BUILD_BENCHMARKS OFF CACHE BOOL "Build Ceres benchmarks" FORCE)
 set(BUILD_TESTING OFF CACHE BOOL "Build Ceres tests" FORCE)
-set(SUITESPARSE OFF CACHE BOOL "Enable SuiteSparse" FORCE)
 set(PROVIDE_UNINSTALL_TARGET OFF CACHE BOOL "Disable Ceres uninstall target" FORCE)
+set(SUITESPARSE OFF CACHE BOOL "Disable SuiteSparse to avoid version conflicts" FORCE)
+set(CXSPARSE OFF CACHE BOOL "Disable CXSparse" FORCE)
+add_subdirectory(thirdparty/ceres-solver EXCLUDE_FROM_ALL)
+add_subdirectory(thirdparty/spdlog EXCLUDE_FROM_ALL)
 
-# Prevent finding system Ceres
-set(CMAKE_DISABLE_FIND_PACKAGE_Ceres ON)
-
-add_subdirectory(${CERES_DIR} EXCLUDE_FROM_ALL)
-
-# Find GLU for legacy OpenGL functions
-find_library(GLU_LIBRARY GLU REQUIRED)
-
-# Include directories
-include_directories(${OpenCV_INCLUDE_DIRS})
-include_directories(${EIGEN3_INCLUDE_DIR})
-include_directories(src)
-include_directories(thirdparty/pangolin/include)
-include_directories(${CMAKE_BINARY_DIR}/thirdparty/pangolin/include)
-include_directories(thirdparty/Sophus)
-include_directories(thirdparty/spdlog/include)
-include_directories(thirdparty/ceres-solver/include)
-include_directories(${CMAKE_BINARY_DIR}/thirdparty/ceres-solver/include)
-
-# Collect source files
-file(GLOB_RECURSE SOURCES 
-    "src/database/*.cpp"
-    "src/module/*.cpp"
-    "src/util/*.cpp"
-    "src/viewer/*.cpp"
+# Library
+add_library(vio
+  src/vio/estimators/estimator.cc
+  src/vio/estimators/imu_propagation.cc
+  src/vio/estimators/initializer.cc
+  src/vio/estimators/startup_calibration.cc
+  src/vio/estimators/visual_update.cc
+  src/vio/feature/feature_tracker.cc
+  src/vio/feature/landmark_tracker.cc
+  src/vio/geometry/inverse_depth.cc
+  src/vio/geometry/triangulation.cc
+  src/vio/odometry/visual_inertial_odometry.cc
+  src/vio/pipeline/config_loader.cc
+  src/vio/pipeline/odometry_pipeline.cc
+  src/vio/scene/camera.cc
+  src/vio/scene/frame.cc
+  src/vio/sensor/camera_model.cc
+  src/vio/sensor/equirectangular_camera_model.cc
+  src/vio/sensor/fisheye_equidistant_camera_model.cc
+  src/vio/sensor/imu_interval.cc
+  src/vio/sensor/pinhole_radtan_camera_model.cc
 )
-
-
-
-# Add unified stereo pipeline (VO/VIO configurable via YAML)
-add_executable(euroc_stereo app/euroc_stereo.cpp 
-    app/player/euroc_player.cpp
-    src/database/Frame.cpp
-    src/database/Feature.cpp
-    src/database/MapPoint.cpp
-    src/processing/FeatureTracker.cpp
-    src/processing/Optimizer.cpp
-    src/processing/Estimator.cpp
-    src/processing/IMUHandler.cpp
-    src/optimization/Factors.cpp
-    src/optimization/Parameters.cpp
-    src/util/Config.cpp
-    src/util/EurocUtils.cpp
-    src/util/StringUtils.cpp
-    src/viewer/PangolinViewer.cpp
+target_include_directories(vio PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+  ${EIGEN3_INCLUDE_DIR}
+  ${OpenCV_INCLUDE_DIRS}
+  ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/ceres-solver/include
+  ${CMAKE_CURRENT_BINARY_DIR}/thirdparty/ceres-solver/config
 )
+target_link_libraries(vio PUBLIC ${OpenCV_LIBS} PNG::PNG ceres spdlog::spdlog_header_only)
 
-# Add TUM stereo pipeline (Fisheye support)
-add_executable(tum_stereo app/tum_stereo.cpp 
-    app/player/tum_player.cpp
-    src/database/Frame.cpp
-    src/database/Feature.cpp
-    src/database/MapPoint.cpp
-    src/processing/FeatureTracker.cpp
-    src/processing/Optimizer.cpp
-    src/processing/Estimator.cpp
-    src/processing/IMUHandler.cpp
-    src/optimization/Factors.cpp
-    src/optimization/Parameters.cpp
-    src/util/Config.cpp
-    src/util/TUMUtils.cpp
-    src/util/StringUtils.cpp
-    src/viewer/PangolinViewer.cpp
-)
+# Command-line tool: vio odometry | vio gui
+add_executable(vio_main src/vio/apps/vio.cc)
+target_link_libraries(vio_main PRIVATE vio)
+set_target_properties(vio_main PROPERTIES OUTPUT_NAME vio RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-# Add RGBD pipeline (VO mode)
-add_executable(rgbd_example app/rgbd_example.cpp 
-    app/player/rgbd_player.cpp
-    src/database/Frame.cpp
-    src/database/Feature.cpp
-    src/database/MapPoint.cpp
-    src/processing/FeatureTracker.cpp
-    src/processing/Optimizer.cpp
-    src/processing/Estimator.cpp
-    src/processing/IMUHandler.cpp
-    src/optimization/Factors.cpp
-    src/optimization/Parameters.cpp
-    src/util/Config.cpp
-    src/util/StringUtils.cpp
-    src/viewer/PangolinViewer.cpp
-)
+# Viewer (ImGui/ImPlot), built when GLFW is available
+find_package(glfw3 3.3 QUIET)
+if(glfw3_FOUND)
+  set(OpenGL_GL_PREFERENCE GLVND)
+  find_package(OpenGL REQUIRED)
+  add_library(imgui STATIC
+    thirdparty/imgui/imgui.cpp
+    thirdparty/imgui/imgui_draw.cpp
+    thirdparty/imgui/imgui_tables.cpp
+    thirdparty/imgui/imgui_widgets.cpp
+    thirdparty/imgui/backends/imgui_impl_glfw.cpp
+    thirdparty/imgui/backends/imgui_impl_opengl3.cpp
+    thirdparty/implot/implot.cpp
+    thirdparty/implot/implot_items.cpp
+  )
+  target_include_directories(imgui PUBLIC
+    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/imgui
+    ${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/implot
+  )
+  target_link_libraries(imgui PUBLIC glfw OpenGL::GL ${CMAKE_DL_LIBS})
 
-
-# Link libraries
-target_link_libraries(euroc_stereo 
-    ${OpenCV_LIBS} 
-    yaml-cpp 
-    OpenGL::GL 
-    GLEW::GLEW
-    Threads::Threads
-    ceres
-    Sophus::Sophus
-    spdlog::spdlog
-    pango_display
-    pango_windowing
-    pango_opengl
-    pango_core
-    pango_image
-    m  # Math library for M_PI
-)
-
-target_link_libraries(tum_stereo 
-    ${OpenCV_LIBS} 
-    yaml-cpp 
-    OpenGL::GL 
-    GLEW::GLEW
-    Threads::Threads
-    ceres
-    Sophus::Sophus
-    spdlog::spdlog
-    pango_display
-    pango_windowing
-    pango_opengl
-    pango_core
-    pango_image
-    m  # Math library for M_PI
-)
-
-target_link_libraries(rgbd_example 
-    ${OpenCV_LIBS} 
-    yaml-cpp 
-    OpenGL::GL 
-    GLEW::GLEW
-    Threads::Threads
-    ceres
-    Sophus::Sophus
-    spdlog::spdlog
-    pango_display
-    pango_windowing
-    pango_opengl
-    pango_core
-    pango_image
-    m  # Math library for M_PI
-)
-
-# Link Eigen3 to all targets
-if(TARGET Eigen3::Eigen)
-    target_link_libraries(euroc_stereo Eigen3::Eigen)
-    target_link_libraries(tum_stereo Eigen3::Eigen)
-    target_link_libraries(rgbd_example Eigen3::Eigen)
+  add_library(vio_ui STATIC src/vio/ui/viewer.cc)
+  target_link_libraries(vio_ui PUBLIC vio imgui)
+  target_link_libraries(vio_main PRIVATE vio_ui)
+  target_compile_definitions(vio_main PRIVATE VIO_WITH_GUI)
 else()
-    # Fallback for older CMake versions
-    target_include_directories(euroc_stereo PRIVATE ${EIGEN3_INCLUDE_DIR})
-    target_include_directories(tum_stereo PRIVATE ${EIGEN3_INCLUDE_DIR})
-    target_include_directories(rgbd_example PRIVATE ${EIGEN3_INCLUDE_DIR})
+  message(STATUS "GLFW not found: 'vio gui' is not built")
 endif()
-
-# Print OpenCV information for debugging
-message(STATUS "OpenCV library status:")
-message(STATUS "    version: ${OpenCV_VERSION}")
-message(STATUS "    libraries: ${OpenCV_LIBS}")
-message(STATUS "    include path: ${OpenCV_INCLUDE_DIRS}")
