@@ -2,8 +2,6 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Visual-inertial odometry for 360°, pinhole and fisheye cameras.
-
 [![OpenVIO demo](doc/media/openvio_demo.png)](https://github.com/93won/openvio/releases/download/v1.0.0/openvio_demo.mp4)
 
 - **Usage** (build, data, run, evaluate): [doc/usage.md](doc/usage.md)
