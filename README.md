@@ -30,7 +30,7 @@
 
 ## Benchmark
 
-![Mean ATE](doc/media/benchmark_ate.png)
+![Benchmark](doc/media/benchmark_v100.png)
 
 Mean over the completed sequences. Details in the [release notes](release_notes/v1.0.0.pdf).
 
