@@ -1,6 +1,4 @@
-# OpenVIO
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+# OpenVIO [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ### OpenVIO is a permissively licensed visual-inertial odometry framework that supports a wide range of camera models.
 
