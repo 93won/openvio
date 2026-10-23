@@ -32,8 +32,7 @@
 
 ![Mean ATE](doc/media/benchmark_ate.png)
 
-Monocular, no loop closure; mean over the completed sequences (completed / total above each bar). Details in the
-[release notes](release_notes/v1.0.0.pdf).
+Mean over the completed sequences. Details in the [release notes](release_notes/v1.0.0.pdf).
 
 ## Docs
 
