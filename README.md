@@ -2,7 +2,33 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
+OpenVIO is a visual-inertial odometry framework that supports a wide range of camera models.
+
 [![OpenVIO demo](doc/media/openvio_demo.png)](https://youtu.be/sCMYwvradZU)
+
+**Supported configurations**
+
+| Camera model | Monocular | Stereo | Tested on |
+|---|:---:|:---:|---|
+| 360° equirectangular, two-lens stitched (`EQUIRECTANGULAR`) | ✓ | – | PanoAir |
+| Pinhole, radial-tangential (`PINHOLE_RADTAN`) | ✓ | ✓ | EuRoC MAV |
+| Fisheye, equidistant (`FISHEYE_EQUIDISTANT`) | ✓ | ✓ | TUM-VI |
+
+**Online calibration**
+
+| | Pinhole | Fisheye | 360° |
+|---|:---:|:---:|:---:|
+| Camera-IMU time offset | ✓ | ✓ | ✓ |
+| Camera-IMU extrinsics | ✓ | ✓ | ✓ |
+| Time offset between the two lenses | – | – | ✓ |
+| Stitching error | – | – | ✓ |
+
+**Features**
+- Mono and stereo with one estimator; a new lens model is one file
+- Initialization at rest or in motion
+- Tracking under auto-exposure changes and night lights
+- Lost landmarks found again after occlusion and image-border crossing
+- Deterministic: the same input gives the same trajectory
 
 ## Docs
 
