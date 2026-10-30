@@ -1,0 +1,94 @@
+% Compile: tectonic -X compile v1.0.1.tex
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[left=20mm,right=20mm,top=18mm,bottom=18mm]{geometry}
+\usepackage{fontspec}
+\setmainfont{TeXGyreTermesX}[Extension=.otf, UprightFont=*-Regular, BoldFont=*-Bold, ItalicFont=*-Italic,
+  BoldItalicFont=*-BoldItalic]
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{float}
+\usepackage{caption}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\pagestyle{empty}
+\titleformat{\section}{\normalsize\bfseries\scshape}{\Roman{section}.}{0.5em}{}
+\titlespacing*{\section}{0pt}{9pt}{3pt}
+\setlist[itemize]{leftmargin=1.2em, itemsep=1pt, parsep=0pt, topsep=1pt}
+% IEEE style: "TABLE I" above in small caps, "Fig. 1." below
+\renewcommand{\thetable}{\Roman{table}}
+\captionsetup[table]{position=top, labelsep=newline, font={footnotesize,sc}, justification=centering, skip=3pt}
+\captionsetup[figure]{labelsep=period, font=footnotesize, name=Fig., skip=2pt}
+\renewcommand{\arraystretch}{1.15}
+
+
+
+\begin{document}
+
+\begin{center}
+  {\LARGE\bfseries Release Notes}\par\vspace{3pt}
+  {\small 30 October 2026}
+\end{center}
+
+\section{ROS support}
+Version v1.0.1 adds optional ROS 1 and ROS 2 nodes for image and IMU topics. Both nodes use the same OpenVIO estimator
+and the same input processing code. Monocular and stereo configurations are available for EuRoC MAV and TUM-VI.
+
+\begin{table}[H]
+\centering
+\caption{ROS distributions}
+\begin{tabular}{lll}
+\hline\hline
+ROS & Distribution & Ubuntu \\
+\hline
+ROS 1 & Noetic & 20.04 \\
+ROS 2 & Humble & 22.04 \\
+ROS 2 & Jazzy & 24.04 \\
+\hline\hline
+\end{tabular}
+\end{table}
+
+\section{Separate builds}
+Use \texttt{./build\_ros1.sh} for ROS 1. Use \texttt{./build\_ros2.sh humble} or
+\texttt{./build\_ros2.sh jazzy} for ROS 2. The two scripts run their respective build tools directly.
+Each distribution has its own output under \texttt{build\_ros/<distro>/}. Source
+\texttt{build\_ros/<distro>/install/setup.bash} in each terminal before use.
+
+\begin{itemize}
+\item The standalone build remains \texttt{./build.sh}, with output in \texttt{build/}.
+\item The ROS build does not call the standalone script or write to its output directory.
+\item Noetic uses a local Eigen 3.4 installation. The system Eigen installation stays unchanged.
+\item The ROS build stops if a dependency install, configuration step or compiler command fails.
+\end{itemize}
+
+\section{Run and display}
+Run one command for the installed ROS distribution:
+\begin{quote}\small\ttfamily
+roslaunch openvio\_ros1 openvio.launch dataset:=euroc\\
+ros2 launch openvio\_ros2 openvio.launch.py dataset:=euroc
+\end{quote}
+Start the node before playback. For ROS 1 bags, use \texttt{rosbag play -d 2 <bag>}.
+Convert ROS 1 bags before ROS 2 playback.
+
+The launch files open RViz with the estimated path, landmarks, tracked image and the \texttt{world} to \texttt{imu}
+transform. Use \texttt{stereo:=true} for a stereo dataset or \texttt{config:=/path/to/sensor.yaml} for another sensor.
+The optional \texttt{output\_path} argument writes the IMU trajectory in TUM format.
+
+\section{Verification and scope}
+ROS 1 Noetic and ROS 2 Jazzy were built and checked with EuRoC MH\_01\_easy monocular data. The checks confirmed a
+growing path, changing feature images, nonempty landmarks, and coordinate transforms. RViz displayed the outputs.
+These checks verify the ROS interface and display. They do not provide a new accuracy benchmark.
+
+ROS 2 Humble is not tested. Stereo and live sensor input were not rerun in this release check. The accuracy results
+in the v1.0.0 release notes remain the reference results.
+
+\section{Documentation}
+The documentation links now follow this order: Quick start, ROS 1 / ROS 2, Release notes. See
+\href{https://github.com/93won/openvio/blob/master/doc/ros.md}{\texttt{doc/ros.md}} for build commands, topic names,
+launch arguments, RViz controls and fault checks.
+\end{document}

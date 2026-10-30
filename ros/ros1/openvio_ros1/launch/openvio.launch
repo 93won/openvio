@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: MIT -->
+<!-- Copyright (c) 2026 Seungwon Choi. All rights reserved. -->
+<!-- OpenVIO on the topics of an EuRoC MAV or TUM-VI bag:
+       roslaunch openvio_ros1 openvio.launch dataset:=euroc stereo:=true
+       roslaunch openvio_ros1 openvio.launch config:=/path/to/my_camera.yaml imu:=/my/imu image0:=/my/image
+     dataset: euroc | tum_vi (config/<dataset>.yaml, or <dataset>_stereo.yaml with stereo:=true); config overrides it. -->
+<launch>
+  <arg name="dataset" default="euroc" doc="euroc or tum_vi"/>
+  <arg name="stereo" default="false" doc="use the stereo config of the dataset"/>
+  <!-- $(eval) must be the whole value: it builds config/<dataset>[_stereo].yaml of the package -->
+  <arg name="config" doc="config file (overrides dataset and stereo)"
+       default="$(eval find('openvio_ros1') + '/config/' + arg('dataset') + ('_stereo' if str(arg('stereo')).lower() in ('true', '1') else '') + '.yaml')"/>
+  <arg name="output_path" default="" doc="TUM trajectory file written by the node (empty: none)"/>
+  <arg name="imu" default="/imu0" doc="IMU topic"/>
+  <arg name="image0" default="/cam0/image_raw" doc="camera-0 image topic"/>
+  <arg name="image1" default="/cam1/image_raw" doc="camera-1 image topic (stereo)"/>
+  <arg name="rviz" default="true" doc="start RViz"/>
+
+  <node pkg="openvio_ros1" type="openvio_node" name="openvio" output="screen">
+    <param name="config_path" value="$(arg config)"/>
+    <param name="output_path" value="$(arg output_path)"/>
+    <remap from="imu" to="$(arg imu)"/>
+    <remap from="image0" to="$(arg image0)"/>
+    <remap from="image1" to="$(arg image1)"/>
+  </node>
+  <node if="$(arg rviz)" pkg="rviz" type="rviz" name="rviz" args="-d $(find openvio_ros1)/rviz/openvio.rviz"/>
+</launch>

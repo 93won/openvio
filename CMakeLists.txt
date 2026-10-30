@@ -13,7 +13,17 @@ endif()
 # Fixed rounding: no fused multiply-add contraction, one portable instruction set, and Eigen's fixed default cache
 # sizes for blocking matrix products (the sizes it would query differ between the core types of a hybrid CPU, which
 # changed the summation order and the last digits from run to run)
-set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG -march=x86-64-v3 -ffp-contract=off")
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag(-march=x86-64-v3 OPENVIO_HAVE_X86_64_V3)
+if(OPENVIO_HAVE_X86_64_V3)
+  set(OPENVIO_ARCH_FLAGS "-march=x86-64-v3")
+else()
+  # The x86-64-v3 instruction set spelled out, for compilers before GCC 11 (e.g. Ubuntu 20.04)
+  set(OPENVIO_ARCH_FLAGS "-march=x86-64 -mcx16 -msahf -mpopcnt -msse3 -mssse3 -msse4.1 -msse4.2 -mavx -mavx2 -mbmi \
+-mbmi2 -mf16c -mfma -mlzcnt -mmovbe -mxsave")
+endif()
+set(OPENVIO_ARCH_FLAGS "${OPENVIO_ARCH_FLAGS}" CACHE INTERNAL "Instruction set of OpenVIO (also used by the ROS nodes)")
+set(CMAKE_CXX_FLAGS_RELEASE "-O3 -DNDEBUG ${OPENVIO_ARCH_FLAGS} -ffp-contract=off")
 add_compile_definitions(EIGEN_NO_CPUID)
 
 find_package(OpenCV 4 REQUIRED)

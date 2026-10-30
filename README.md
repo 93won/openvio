@@ -27,6 +27,7 @@
 - Tracking under auto-exposure changes and night lights
 - Lost landmarks found again after occlusion and image-border crossing
 - Deterministic: the same input gives the same trajectory
+- Optional ROS 1 and ROS 2 nodes with separate `build_ros1.sh` and `build_ros2.sh` scripts
 
 ## Benchmark
 
@@ -38,8 +39,9 @@ Mean over the completed sequences. Details in the [release notes](release_notes/
 
 | | |
 |---|---|
-| Release notes | [v1.0.0](release_notes/v1.0.0.pdf) |
 | Quick start | [doc/usage.md](doc/usage.md) |
+| ROS 1 / ROS 2 | [doc/ros.md](doc/ros.md) |
+| Release notes | [v1.0.1](release_notes/v1.0.1.pdf), [v1.0.0](release_notes/v1.0.0.pdf) |
 | Datasets | [doc/datasets.md](doc/datasets.md) |
 | Configuration | [doc/configuration.md](doc/configuration.md) |
 | Camera models | [doc/camera_models.md](doc/camera_models.md) |

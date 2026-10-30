@@ -11,9 +11,12 @@ cd openvio
 The tool is `build/bin/vio`. Dependencies:
 
 - C++17, CMake >= 3.16
-- OpenCV >= 4.0, Eigen3 >= 3.3, libpng
+- OpenCV >= 4.0, Eigen3 >= 3.4, libpng
 - Ceres Solver and spdlog (included in `thirdparty/`)
 - GLFW >= 3.3 and OpenGL for the viewer (optional)
+
+`./build.sh` installs the missing system libraries with `apt`. For ROS 1 / ROS 2, use the separate
+[ROS build and run guide](ros.md).
 
 ## 2. Get a dataset
 

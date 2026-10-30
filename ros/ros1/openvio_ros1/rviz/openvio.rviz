@@ -1,0 +1,69 @@
+Panels:
+  - Class: rviz/Displays
+    Name: Displays
+    Tree Height: 300
+  - Class: rviz/Views
+    Name: Views
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Class: rviz/Grid
+      Name: Grid
+      Enabled: true
+      Cell Size: 1
+      Plane Cell Count: 40
+      Color: 110; 110; 115
+      Reference Frame: world
+    - Class: rviz/TF
+      Name: TF
+      Enabled: true
+      Marker Scale: 0.6
+      Show Arrows: false
+      Show Axes: true
+      Show Names: true
+    - Class: rviz/Path
+      Name: Trajectory
+      Enabled: true
+      Color: 64; 160; 255
+      Line Style: Billboards
+      Line Width: 0.04
+      Buffer Length: 1
+      Topic: /path
+    - Class: rviz/PointCloud2
+      Name: Landmarks
+      Enabled: true
+      Style: Spheres
+      Size (m): 0.05
+      Color Transformer: FlatColor
+      Color: 255; 150; 40
+      Decay Time: 0
+      Topic: /landmarks
+    - Class: rviz/Image
+      Name: Tracked features
+      Enabled: true
+      Image Topic: /tracked_image
+      Transport Hint: raw
+  Global Options:
+    Fixed Frame: world
+    Background Color: 30; 32; 36
+    Frame Rate: 30
+  Tools:
+    - Class: rviz/MoveCamera
+    - Class: rviz/Select
+  Views:
+    Current:
+      Class: rviz/Orbit
+      Name: Follow the IMU
+      Target Frame: imu
+      Distance: 8
+      Pitch: 0.75
+      Yaw: 0.8
+      Focal Point:
+        X: 0
+        Y: 0
+        Z: 0
+Window Geometry:
+  Width: 1600
+  Height: 950
+  Tracked features:
+    collapsed: false
