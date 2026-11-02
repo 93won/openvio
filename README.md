@@ -2,6 +2,8 @@
 
 ### OpenVIO is an MIT-licensed visual-inertial odometry system for researchers and developers.
 
+[Paper](https://arxiv.org/pdf/2610.41671) | [Citation](#citation)
+
 [![OpenVIO demo](doc/media/openvio_demo.png)](https://youtu.be/sCMYwvradZU)
 
 **Supported configurations**
@@ -47,6 +49,20 @@ Mean over the completed sequences. Details in the [release notes](release_notes/
 | Camera models | [doc/camera_models.md](doc/camera_models.md) |
 | Architecture | [doc/architecture.md](doc/architecture.md) |
 | References | [doc/references.md](doc/references.md) |
+
+## Citation
+
+If you find OpenVIO useful in your research, please cite our paper:
+
+```bibtex
+@article{choi2026openvio,
+  title   = {{OpenVIO}: A Versatile Open-Source Visual-Inertial Odometry System},
+  author  = {Choi, Seungwon},
+  journal = {arXiv preprint arXiv:2610.41671},
+  year    = {2026},
+  url     = {https://arxiv.org/abs/2610.41671}
+}
+```
 
 ## Benchmark Datasets
 
